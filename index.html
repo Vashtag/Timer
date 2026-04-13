@@ -183,11 +183,19 @@
       transition: width 0.85s linear, background 0.4s;
     }
 
-    /* Station dots */
-    .dots {
+    /* Station markers */
+    .stations-row {
       display: flex;
-      gap: 10px;
-      margin-bottom: 2.8rem;
+      justify-content: space-between;
+      width: 100%;
+      margin-bottom: 2.5rem;
+    }
+
+    .station-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.55rem;
     }
 
     .dot {
@@ -211,12 +219,20 @@
       background: #3a3a3a;
     }
 
-    .rotation-note {
-      font-size: 0.72rem;
-      letter-spacing: 0.14em;
-      color: var(--text);
-      margin-bottom: 0.6rem;
-      min-height: 1.1em;
+    .marker-time {
+      font-size: 0.65rem;
+      letter-spacing: 0.06em;
+      color: var(--dimmed);
+      font-variant-numeric: tabular-nums;
+      transition: color 0.3s;
+    }
+
+    .marker-time.active {
+      color: var(--gold);
+    }
+
+    .marker-time.done {
+      color: var(--border);
     }
 
     .end-note {
@@ -456,8 +472,7 @@
   <p class="phase-tag" id="phaseTag">Station Time</p>
   <div class="clock" id="clock">00:00</div>
   <div class="track"><div class="track-fill" id="trackFill" style="width:0%"></div></div>
-  <div class="dots" id="dots"></div>
-  <p class="rotation-note" id="rotationNote"></p>
+  <div class="stations-row" id="dots"></div>
   <p class="end-note" id="endNote"></p>
 </div>
 
@@ -567,14 +582,27 @@ function beginSession() {
   inPackup   = false;
   stationEnd = new Date(now.getTime() + stationSecs * 1000);
 
-  // Build dots
+  // Build station columns (dot + rotation time)
   const dotsEl = document.getElementById('dots');
   dotsEl.innerHTML = '';
   for (let i = 0; i < STATIONS; i++) {
-    const d = document.createElement('div');
-    d.className = 'dot' + (i === 0 ? ' active' : '');
-    d.id = `d${i}`;
-    dotsEl.appendChild(d);
+    const stEnd = new Date(now.getTime() + (i + 1) * stationSecs * 1000);
+
+    const col = document.createElement('div');
+    col.className = 'station-col';
+
+    const dot = document.createElement('div');
+    dot.className = 'dot' + (i === 0 ? ' active' : '');
+    dot.id = `d${i}`;
+
+    const timeEl = document.createElement('span');
+    timeEl.className = 'marker-time' + (i === 0 ? ' active' : '');
+    timeEl.id = `mt${i}`;
+    timeEl.textContent = fmtTimeShort(stEnd);
+
+    col.appendChild(dot);
+    col.appendChild(timeEl);
+    dotsEl.appendChild(col);
   }
 
   const stationsEnd = new Date(sessionEnd.getTime() - PACKUP_SECS * 1000);
@@ -641,11 +669,9 @@ function tick() {
   document.getElementById('trackFill').classList.remove('packup-fill');
   document.getElementById('phaseTag').textContent = 'Station Time';
   document.getElementById('phaseTag').classList.remove('packup');
-  updateRotationNote();
 }
 
 function renderPackup(sesLeft) {
-  document.getElementById('rotationNote').textContent = '';
   const progress = 1 - sesLeft / PACKUP_SECS;
   document.getElementById('clock').textContent = fmt(sesLeft);
   document.getElementById('clock').classList.toggle('urgent', sesLeft < 60);
@@ -655,30 +681,31 @@ function renderPackup(sesLeft) {
   document.getElementById('phaseTag').classList.add('packup');
 }
 
-/* ── Dot helpers ───────────────────────────── */
-function updateRotationNote() {
-  const el = document.getElementById('rotationNote');
-  if (curStation === STATIONS - 1) {
-    el.textContent = `Pack-up starts at ${fmtTime(stationEnd)}`;
-  } else {
-    el.textContent = `Next rotation at ${fmtTime(stationEnd)}`;
-  }
-}
-
+/* ── Dot + time helpers ────────────────────── */
 function updateDots() {
   for (let i = 0; i < STATIONS; i++) {
-    const el = document.getElementById(`d${i}`);
-    if (!el) continue;
-    el.className =
-      i < curStation  ? 'dot done'   :
-      i === curStation ? 'dot active' : 'dot';
+    const dot  = document.getElementById(`d${i}`);
+    const time = document.getElementById(`mt${i}`);
+    if (!dot) continue;
+    if (i < curStation) {
+      dot.className  = 'dot done';
+      if (time) time.className = 'marker-time done';
+    } else if (i === curStation) {
+      dot.className  = 'dot active';
+      if (time) time.className = 'marker-time active';
+    } else {
+      dot.className  = 'dot';
+      if (time) time.className = 'marker-time';
+    }
   }
 }
 
 function allDotsDone() {
   for (let i = 0; i < STATIONS; i++) {
-    const el = document.getElementById(`d${i}`);
-    if (el) el.className = 'dot all-done';
+    const dot  = document.getElementById(`d${i}`);
+    const time = document.getElementById(`mt${i}`);
+    if (dot)  dot.className  = 'dot all-done';
+    if (time) time.className = 'marker-time done';
   }
 }
 
@@ -690,6 +717,12 @@ function fmt(secs) {
 
 function fmtTime(date) {
   return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
+function fmtTimeShort(date) {
+  const h = date.getHours() % 12 || 12;
+  const m = String(date.getMinutes()).padStart(2, '0');
+  return `${h}:${m}`;
 }
 
 /* ── Settings panel ────────────────────────── */
