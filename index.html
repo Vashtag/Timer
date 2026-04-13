@@ -388,6 +388,141 @@
       color: var(--gold);
     }
 
+    /* ── CUSTOM MODAL ───────────────────────────── */
+    #custom-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      z-index: 20;
+      display: none;
+    }
+
+    #custom-backdrop.open { display: block; }
+
+    #custom-modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #141414;
+      border: 1px solid #2a2a2a;
+      border-radius: var(--r);
+      padding: 1.8rem 2rem 1.6rem;
+      z-index: 21;
+      display: none;
+      flex-direction: column;
+      gap: 0;
+      width: 272px;
+    }
+
+    #custom-modal.open { display: flex; }
+
+    .modal-title {
+      font-size: 0.6rem;
+      letter-spacing: 0.38em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 1.4rem;
+    }
+
+    .modal-label {
+      font-size: 0.58rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.45rem;
+    }
+
+    .modal-field {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 1.1rem;
+    }
+
+    .modal-input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.6rem 0.75rem;
+      font-size: 0.95rem;
+      font-weight: 300;
+      border-radius: var(--r);
+      flex: 1;
+      -webkit-appearance: none;
+      color-scheme: dark;
+      font-family: inherit;
+      transition: border-color 0.15s;
+    }
+
+    .modal-input:focus {
+      outline: none;
+      border-color: var(--gold);
+    }
+
+    .modal-input.narrow {
+      flex: 0 0 72px;
+      text-align: center;
+    }
+
+    .modal-input[type="number"]::-webkit-inner-spin-button,
+    .modal-input[type="number"]::-webkit-outer-spin-button {
+      opacity: 0.3;
+    }
+
+    .modal-unit {
+      font-size: 0.62rem;
+      letter-spacing: 0.18em;
+      color: var(--muted);
+    }
+
+    .modal-pills {
+      display: flex;
+      gap: 0.35rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .modal-pill {
+      flex: 1;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 0.45rem 0;
+      font-size: 0.78rem;
+      font-weight: 300;
+      cursor: pointer;
+      border-radius: var(--r);
+      transition: border-color 0.15s, color 0.15s;
+      -webkit-appearance: none;
+    }
+
+    .modal-pill:hover {
+      border-color: #3a3a3a;
+      color: var(--text);
+    }
+
+    .modal-pill.active {
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+
+    .modal-confirm-btn {
+      background: var(--gold);
+      color: #0d0d0d;
+      border: none;
+      padding: 0.78rem;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      cursor: pointer;
+      border-radius: var(--r);
+      transition: opacity 0.15s;
+      font-family: inherit;
+    }
+
+    .modal-confirm-btn:hover { opacity: 0.82; }
+
     /* ── FLASH OVERLAY ────────────────────────── */
     #flash {
       position: fixed;
@@ -455,6 +590,34 @@
   </div>
 </div>
 
+<!-- ── CUSTOM MODAL ────────────────────────────── -->
+<div id="custom-backdrop" onclick="closeCustom()"></div>
+<div id="custom-modal">
+  <p class="modal-title">Custom Session</p>
+
+  <p class="modal-label">Start time</p>
+  <div class="modal-field">
+    <input type="time" id="customTime" class="modal-input" value="11:30">
+  </div>
+
+  <p class="modal-label">Duration</p>
+  <div class="modal-field">
+    <input type="number" id="customDuration" class="modal-input narrow" value="90" min="10" max="480" step="5">
+    <span class="modal-unit">min</span>
+  </div>
+
+  <p class="modal-label">Stations</p>
+  <div class="modal-pills" id="modalStationPills">
+    <button class="modal-pill" onclick="pickModalStation(2,this)">2</button>
+    <button class="modal-pill" onclick="pickModalStation(3,this)">3</button>
+    <button class="modal-pill" onclick="pickModalStation(4,this)">4</button>
+    <button class="modal-pill active" onclick="pickModalStation(5,this)">5</button>
+    <button class="modal-pill" onclick="pickModalStation(6,this)">6</button>
+  </div>
+
+  <button class="modal-confirm-btn" onclick="confirmCustom()">Confirm</button>
+</div>
+
 <!-- ── SETUP ──────────────────────────────────── -->
 <div id="screen-setup">
   <p class="wordmark">School of Anatomy &mdash; Lab Timer</p>
@@ -462,6 +625,7 @@
   <div class="session-options">
     <button class="opt-btn" data-h="11" data-m="30" onclick="pickSession(this)">11:30 am</button>
     <button class="opt-btn" data-h="13" data-m="0"  onclick="pickSession(this)">1:00 pm</button>
+    <button class="opt-btn" id="customBtn" onclick="openCustom(this)">Custom</button>
   </div>
   <p class="preview-text" id="preview">&nbsp;</p>
   <button class="start-btn" id="startBtn" disabled onclick="beginSession()">Start Timer</button>
@@ -767,6 +931,71 @@ function setSessionMins(m, btn) {
   document.querySelectorAll('[data-mins]').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   refreshPreview();
+}
+
+/* ── Custom session modal ──────────────────── */
+let prevSelectedBtn  = null;
+let customConfirmed  = false;
+let modalStations    = 5;
+
+function openCustom(btn) {
+  prevSelectedBtn = document.querySelector('.opt-btn.selected');
+  customConfirmed = false;
+
+  document.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+
+  // Pre-populate with current values
+  document.getElementById('customDuration').value = SESSION_MINS;
+  modalStations = STATIONS;
+  document.querySelectorAll('#modalStationPills .modal-pill').forEach((b, i) => {
+    b.classList.toggle('active', [2,3,4,5,6][i] === modalStations);
+  });
+
+  document.getElementById('custom-backdrop').classList.add('open');
+  document.getElementById('custom-modal').classList.add('open');
+  setTimeout(() => document.getElementById('customTime').focus(), 50);
+}
+
+function closeCustom() {
+  document.getElementById('custom-backdrop').classList.remove('open');
+  document.getElementById('custom-modal').classList.remove('open');
+  // Restore previous selection if user cancelled
+  if (!customConfirmed) {
+    document.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected'));
+    if (prevSelectedBtn) prevSelectedBtn.classList.add('selected');
+  }
+}
+
+function pickModalStation(n, btn) {
+  modalStations = n;
+  document.querySelectorAll('#modalStationPills .modal-pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function confirmCustom() {
+  const timeVal = document.getElementById('customTime').value;
+  const durVal  = parseInt(document.getElementById('customDuration').value, 10);
+
+  if (!timeVal) {
+    document.getElementById('customTime').focus();
+    return;
+  }
+  if (!durVal || durVal < 10) {
+    document.getElementById('customDuration').focus();
+    return;
+  }
+
+  const [h, m] = timeVal.split(':').map(Number);
+  selH         = h;
+  selM         = m;
+  SESSION_MINS = durVal;
+  STATIONS     = modalStations;
+
+  customConfirmed = true;
+  closeCustom();
+  refreshPreview();
+  document.getElementById('startBtn').disabled = false;
 }
 </script>
 </body>
