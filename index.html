@@ -568,8 +568,9 @@ function beginSession() {
     dotsEl.appendChild(d);
   }
 
+  const stationsEnd = new Date(sessionEnd.getTime() - PACKUP_SECS * 1000);
   document.getElementById('endNote').textContent =
-    `Session ends at ${fmtTime(sessionEnd)}  ·  ${fmt(stationSecs)} per station`;
+    `Stations done by ${fmtTime(stationsEnd)}  ·  pack-up until ${fmtTime(sessionEnd)}  ·  ${fmt(stationSecs)} per station`;
 
   document.getElementById('screen-setup').style.display = 'none';
   document.getElementById('screen-timer').style.display = 'flex';
