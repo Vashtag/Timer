@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anatomy Lab — Station Timer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0d0d0d;
+      --border:  #222;
+      --text:    #e2e2e2;
+      --muted:   #555;
+      --dimmed:  #2e2e2e;
+      --gold:    #c9a96e;
+      --danger:  #d4645a;
+      --r:       6px;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── SETUP ────────────────────────────────── */
+    #screen-setup {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .wordmark {
+      font-size: 0.68rem;
+      font-weight: 400;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 3.5rem;
+    }
+
+    .field-label {
+      font-size: 0.62rem;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+
+    .session-options {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1.8rem;
+    }
+
+    .opt-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 0.85rem 2.2rem;
+      font-size: 1.05rem;
+      font-weight: 300;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      border-radius: var(--r);
+      transition: border-color 0.15s, color 0.15s;
+      -webkit-appearance: none;
+    }
+
+    .opt-btn:hover {
+      border-color: #3a3a3a;
+      color: var(--text);
+    }
+
+    .opt-btn.selected {
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+
+    .preview-text {
+      font-size: 0.68rem;
+      letter-spacing: 0.18em;
+      color: #3a3a3a;
+      margin-bottom: 2.8rem;
+      min-height: 1.1em;
+      text-align: center;
+    }
+
+    .start-btn {
+      background: var(--gold);
+      color: #0d0d0d;
+      border: none;
+      padding: 0.85rem 3.2rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      cursor: pointer;
+      border-radius: var(--r);
+      transition: opacity 0.15s;
+      -webkit-appearance: none;
+    }
+
+    .start-btn:disabled {
+      opacity: 0.2;
+      cursor: default;
+    }
+
+    .start-btn:hover:not(:disabled) {
+      opacity: 0.82;
+    }
+
+    /* ── TIMER ────────────────────────────────── */
+    #screen-timer {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 540px;
+      padding: 2rem;
+    }
+
+    .phase-tag {
+      font-size: 0.62rem;
+      letter-spacing: 0.42em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 1.4rem;
+      transition: color 0.4s;
+    }
+
+    .phase-tag.packup {
+      color: var(--danger);
+      opacity: 0.85;
+    }
+
+    .clock {
+      font-size: clamp(5.5rem, 20vw, 9.5rem);
+      font-weight: 100;
+      letter-spacing: -0.025em;
+      line-height: 1;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+      transition: color 0.4s;
+      margin-bottom: 2.8rem;
+    }
+
+    .clock.urgent {
+      color: var(--danger);
+    }
+
+    /* Progress bar */
+    .track {
+      width: 100%;
+      height: 1px;
+      background: var(--border);
+      position: relative;
+      margin-bottom: 1.8rem;
+      border-radius: 1px;
+      overflow: hidden;
+    }
+
+    .track-fill {
+      position: absolute;
+      inset: 0 auto 0 0;
+      background: var(--gold);
+      transition: width 0.85s linear;
+    }
+
+    .track-fill.packup-fill {
+      background: var(--danger);
+      transition: width 0.85s linear, background 0.4s;
+    }
+
+    /* Station dots */
+    .dots {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 2.8rem;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--dimmed);
+      transition: background 0.3s, transform 0.3s;
+    }
+
+    .dot.active {
+      background: var(--gold);
+      transform: scale(1.35);
+    }
+
+    .dot.done {
+      background: var(--border);
+    }
+
+    .dot.all-done {
+      background: #3a3a3a;
+    }
+
+    .end-note {
+      font-size: 0.62rem;
+      letter-spacing: 0.2em;
+      color: #3a3a3a;
+    }
+
+    /* ── FLASH OVERLAY ────────────────────────── */
+    #flash {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0;
+    }
+
+    #flash.go {
+      animation: flashpulse 0.55s ease-out forwards;
+    }
+
+    #flash.go-final {
+      animation: flashpulse-final 0.55s ease-out forwards;
+    }
+
+    @keyframes flashpulse {
+      0%   { opacity: 1; background: rgba(201,169,110,0.14); }
+      100% { opacity: 0; background: rgba(201,169,110,0.14); }
+    }
+
+    @keyframes flashpulse-final {
+      0%   { opacity: 1; background: rgba(212,100,90,0.14); }
+      100% { opacity: 0; background: rgba(212,100,90,0.14); }
+    }
+  </style>
+</head>
+<body>
+
+<div id="flash"></div>
+
+<!-- ── SETUP ──────────────────────────────────── -->
+<div id="screen-setup">
+  <p class="wordmark">School of Anatomy &mdash; Lab Timer</p>
+  <p class="field-label">Session start</p>
+  <div class="session-options">
+    <button class="opt-btn" data-h="11" data-m="30" onclick="pickSession(this)">11:30 am</button>
+    <button class="opt-btn" data-h="13" data-m="0"  onclick="pickSession(this)">1:00 pm</button>
+  </div>
+  <p class="preview-text" id="preview">&nbsp;</p>
+  <button class="start-btn" id="startBtn" disabled onclick="beginSession()">Start Timer</button>
+</div>
+
+<!-- ── TIMER ──────────────────────────────────── -->
+<div id="screen-timer">
+  <p class="phase-tag" id="phaseTag">Station Time</p>
+  <div class="clock" id="clock">00:00</div>
+  <div class="track"><div class="track-fill" id="trackFill" style="width:0%"></div></div>
+  <div class="dots" id="dots"></div>
+  <p class="end-note" id="endNote"></p>
+</div>
+
+<script>
+/* ── Constants ─────────────────────────────── */
+const STATIONS    = 5;
+const PACKUP_SECS = 600; // 10 min
+
+/* ── Audio ─────────────────────────────────── */
+const AC = new (window.AudioContext || window.webkitAudioContext)();
+
+function beep(freq, startT, dur, vol = 0.55, type = 'sine') {
+  const osc = AC.createOscillator();
+  const env = AC.createGain();
+  osc.connect(env);
+  env.connect(AC.destination);
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, startT);
+  env.gain.setValueAtTime(vol, startT);
+  env.gain.exponentialRampToValueAtTime(0.0001, startT + dur);
+  osc.start(startT);
+  osc.stop(startT + dur + 0.05);
+}
+
+// Station rotation: two ascending tones
+function playRotation() {
+  const t = AC.currentTime;
+  beep(880,  t,        1.8, 0.55);
+  beep(1320, t + 0.18, 1.4, 0.40);
+}
+
+// Session complete / pack-up: three descending tones, clearly different
+function playFinal() {
+  const t = AC.currentTime;
+  beep(1046, t,        1.2, 0.65);
+  beep(880,  t + 0.45, 1.2, 0.65);
+  beep(659,  t + 0.90, 2.2, 0.65);
+}
+
+function triggerFlash(isFinal) {
+  const el = document.getElementById('flash');
+  el.className = '';
+  // Force reflow so animation restarts
+  void el.offsetWidth;
+  el.className = isFinal ? 'go-final' : 'go';
+}
+
+/* ── State ─────────────────────────────────── */
+let selH = null, selM = null;
+let sessionEnd    = null; // Date: absolute session end
+let stationSecs   = 0;   // seconds per station (integer)
+let curStation    = 0;   // 0-indexed, 0–4
+let stationEnd    = null; // Date: end of current station slot
+let inPackup      = false;
+let ticker        = null;
+
+/* ── Setup screen ──────────────────────────── */
+function pickSession(btn) {
+  document.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selH = +btn.dataset.h;
+  selM = +btn.dataset.m;
+  refreshPreview();
+  document.getElementById('startBtn').disabled = false;
+}
+
+function calcSessionEnd() {
+  const d = new Date();
+  d.setHours(selH, selM, 0, 0);
+  return new Date(d.getTime() + 90 * 60 * 1000);
+}
+
+function refreshPreview() {
+  const now    = new Date();
+  const end    = calcSessionEnd();
+  const left   = (end - now) / 1000;
+  const stSecs = Math.floor((left - PACKUP_SECS) / STATIONS);
+  const el     = document.getElementById('preview');
+
+  if (stSecs < 30) {
+    el.textContent = 'Session time has elapsed';
+  } else {
+    el.textContent =
+      `≈ ${fmt(stSecs)} per station if started now`;
+  }
+}
+
+/* ── Begin ─────────────────────────────────── */
+function beginSession() {
+  if (selH === null) return;
+  AC.resume();
+
+  const now  = new Date();
+  sessionEnd = calcSessionEnd();
+  const left = (sessionEnd - now) / 1000;
+  stationSecs = Math.floor((left - PACKUP_SECS) / STATIONS);
+
+  if (stationSecs < 30) {
+    alert('Not enough time remaining. Please check the session start time.');
+    return;
+  }
+
+  curStation = 0;
+  inPackup   = false;
+  stationEnd = new Date(now.getTime() + stationSecs * 1000);
+
+  // Build dots
+  const dotsEl = document.getElementById('dots');
+  dotsEl.innerHTML = '';
+  for (let i = 0; i < STATIONS; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.id = `d${i}`;
+    dotsEl.appendChild(d);
+  }
+
+  document.getElementById('endNote').textContent =
+    `Session ends at ${fmtTime(sessionEnd)}  ·  ${fmt(stationSecs)} per station`;
+
+  document.getElementById('screen-setup').style.display = 'none';
+  document.getElementById('screen-timer').style.display = 'flex';
+
+  tick();
+  ticker = setInterval(tick, 400);
+}
+
+/* ── Tick ───────────────────────────────────── */
+function tick() {
+  const now     = new Date();
+  const sesLeft = (sessionEnd - now) / 1000;
+
+  // Session fully over
+  if (sesLeft <= 0) {
+    clearInterval(ticker);
+    document.getElementById('clock').textContent = '00:00';
+    document.getElementById('phaseTag').textContent = 'Session Complete';
+    document.getElementById('trackFill').style.width = '100%';
+    return;
+  }
+
+  // Pack-up phase
+  if (inPackup) {
+    renderPackup(sesLeft);
+    return;
+  }
+
+  // Check if current station ended
+  const stLeft = (stationEnd - now) / 1000;
+
+  if (stLeft <= 0) {
+    curStation++;
+
+    if (curStation >= STATIONS) {
+      // All 5 stations done → final ding → pack up
+      inPackup = true;
+      playFinal();
+      triggerFlash(true);
+      allDotsDone();
+      renderPackup(sesLeft);
+      return;
+    }
+
+    // Rotation ding
+    playRotation();
+    triggerFlash(false);
+    stationEnd = new Date(stationEnd.getTime() + stationSecs * 1000);
+    updateDots();
+  }
+
+  // Render station countdown
+  const remaining = Math.max(0, (stationEnd - now) / 1000);
+  const progress  = 1 - remaining / stationSecs;
+
+  document.getElementById('clock').textContent = fmt(remaining);
+  document.getElementById('clock').classList.toggle('urgent', remaining < 60);
+  document.getElementById('trackFill').style.width = (progress * 100).toFixed(2) + '%';
+  document.getElementById('trackFill').classList.remove('packup-fill');
+  document.getElementById('phaseTag').textContent = 'Station Time';
+  document.getElementById('phaseTag').classList.remove('packup');
+}
+
+function renderPackup(sesLeft) {
+  const progress = 1 - sesLeft / PACKUP_SECS;
+  document.getElementById('clock').textContent = fmt(sesLeft);
+  document.getElementById('clock').classList.toggle('urgent', sesLeft < 60);
+  document.getElementById('trackFill').style.width = (Math.min(1, progress) * 100).toFixed(2) + '%';
+  document.getElementById('trackFill').classList.add('packup-fill');
+  document.getElementById('phaseTag').textContent = 'Pack Up & Wash Hands';
+  document.getElementById('phaseTag').classList.add('packup');
+}
+
+/* ── Dot helpers ───────────────────────────── */
+function updateDots() {
+  for (let i = 0; i < STATIONS; i++) {
+    const el = document.getElementById(`d${i}`);
+    if (!el) continue;
+    el.className =
+      i < curStation  ? 'dot done'   :
+      i === curStation ? 'dot active' : 'dot';
+  }
+}
+
+function allDotsDone() {
+  for (let i = 0; i < STATIONS; i++) {
+    const el = document.getElementById(`d${i}`);
+    if (el) el.className = 'dot all-done';
+  }
+}
+
+/* ── Formatters ────────────────────────────── */
+function fmt(secs) {
+  const s = Math.max(0, Math.round(secs));
+  return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+}
+
+function fmtTime(date) {
+  return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+</script>
+</body>
+</html>
