@@ -212,9 +212,9 @@
     }
 
     .end-note {
-      font-size: 0.62rem;
-      letter-spacing: 0.2em;
-      color: #3a3a3a;
+      font-size: 0.65rem;
+      letter-spacing: 0.18em;
+      color: var(--muted);
     }
 
     /* ── SETTINGS ────────────────────────────── */
@@ -570,7 +570,7 @@ function beginSession() {
 
   const stationsEnd = new Date(sessionEnd.getTime() - PACKUP_SECS * 1000);
   document.getElementById('endNote').textContent =
-    `Stations done by ${fmtTime(stationsEnd)}  ·  pack-up until ${fmtTime(sessionEnd)}  ·  ${fmt(stationSecs)} per station`;
+    `Stations end ${fmtTime(stationsEnd)}  ·  ${fmt(stationSecs)} per station`;
 
   document.getElementById('screen-setup').style.display = 'none';
   document.getElementById('screen-timer').style.display = 'flex';
