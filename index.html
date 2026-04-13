@@ -266,7 +266,7 @@
       flex-direction: column;
       gap: 0.6rem;
       z-index: 10;
-      min-width: 180px;
+      min-width: 220px;
     }
 
     #settings-panel.open {
@@ -315,6 +315,55 @@
       background: var(--danger);
     }
 
+    .settings-divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 0.5rem 0 0.2rem;
+    }
+
+    .settings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.2rem;
+    }
+
+    .settings-row-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .pill-group {
+      display: flex;
+      gap: 0.3rem;
+    }
+
+    .pill-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 0.28rem 0.6rem;
+      font-size: 0.65rem;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: border-color 0.15s, color 0.15s;
+      -webkit-appearance: none;
+      white-space: nowrap;
+    }
+
+    .pill-btn:hover {
+      border-color: #3a3a3a;
+      color: var(--text);
+    }
+
+    .pill-btn.active {
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+
     /* ── FLASH OVERLAY ────────────────────────── */
     #flash {
       position: fixed;
@@ -361,6 +410,25 @@
   <button class="test-btn final-btn" onclick="testFinal()">
     <span class="dot-icon"></span>Final ding
   </button>
+
+  <hr class="settings-divider">
+  <p class="settings-title">Session</p>
+
+  <div class="settings-row">
+    <span class="settings-row-label">Stations</span>
+    <div class="pill-group">
+      <button class="pill-btn" data-stations="4" onclick="setStations(4, this)">4</button>
+      <button class="pill-btn active" data-stations="5" onclick="setStations(5, this)">5</button>
+    </div>
+  </div>
+
+  <div class="settings-row">
+    <span class="settings-row-label">Duration</span>
+    <div class="pill-group">
+      <button class="pill-btn" data-mins="60" onclick="setSessionMins(60, this)">60 min</button>
+      <button class="pill-btn active" data-mins="90" onclick="setSessionMins(90, this)">90 min</button>
+    </div>
+  </div>
 </div>
 
 <!-- ── SETUP ──────────────────────────────────── -->
@@ -386,8 +454,11 @@
 
 <script>
 /* ── Constants ─────────────────────────────── */
-const STATIONS    = 5;
 const PACKUP_SECS = 600; // 10 min
+
+/* ── Session config (overridable via settings) */
+let STATIONS     = 5;
+let SESSION_MINS = 90;
 
 /* ── Audio ─────────────────────────────────── */
 const AC = new (window.AudioContext || window.webkitAudioContext)();
@@ -450,7 +521,7 @@ function pickSession(btn) {
 function calcSessionEnd() {
   const d = new Date();
   d.setHours(selH, selM, 0, 0);
-  return new Date(d.getTime() + 90 * 60 * 1000);
+  return new Date(d.getTime() + SESSION_MINS * 60 * 1000);
 }
 
 function refreshPreview() {
@@ -627,6 +698,21 @@ function testFinal() {
     playFinal();
     triggerFlash(true);
   });
+}
+
+/* ── Session config setters ────────────────── */
+function setStations(n, btn) {
+  STATIONS = n;
+  document.querySelectorAll('[data-stations]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  refreshPreview();
+}
+
+function setSessionMins(m, btn) {
+  SESSION_MINS = m;
+  document.querySelectorAll('[data-mins]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  refreshPreview();
 }
 </script>
 </body>
