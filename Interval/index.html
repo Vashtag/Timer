@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bellringer — Interval Timer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:     #0d0d0d;
+      --border: #222;
+      --text:   #e2e2e2;
+      --muted:  #555;
+      --dimmed: #2e2e2e;
+      --gold:   #c9a96e;
+      --danger: #d4645a;
+      --r:      6px;
+    }
+
+    html, body { height: 100%; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── SETUP ───────────────────────────────── */
+    #screen-setup {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 400px;
+      padding: 2rem;
+    }
+
+    .wordmark {
+      font-size: 0.68rem;
+      font-weight: 400;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.6rem;
+    }
+
+    .page-title {
+      font-size: 1.9rem;
+      font-weight: 200;
+      letter-spacing: 0.06em;
+      color: var(--text);
+      margin-bottom: 3rem;
+    }
+
+    .field-label {
+      font-size: 0.6rem;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.75rem;
+      align-self: flex-start;
+    }
+
+    /* Duration grid */
+    .duration-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.5rem;
+      width: 100%;
+      margin-bottom: 2rem;
+    }
+
+    .dur-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 0.7rem 0.4rem;
+      font-size: 0.82rem;
+      font-weight: 300;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      border-radius: var(--r);
+      transition: border-color 0.15s, color 0.15s;
+      -webkit-appearance: none;
+    }
+
+    .dur-btn:hover {
+      border-color: #3a3a3a;
+      color: var(--text);
+    }
+
+    .dur-btn.selected {
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+
+    /* Bell sound row */
+    .bell-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      width: 100%;
+      margin-bottom: 2rem;
+    }
+
+    .bell-select {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.65rem 0.85rem;
+      font-size: 0.88rem;
+      font-weight: 300;
+      font-family: inherit;
+      border-radius: var(--r);
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23555' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.85rem center;
+      padding-right: 2.2rem;
+      transition: border-color 0.15s;
+      color-scheme: dark;
+    }
+
+    .bell-select:focus {
+      outline: none;
+      border-color: var(--gold);
+    }
+
+    .bell-select option {
+      background: #1a1a1a;
+      color: var(--text);
+    }
+
+    .test-bell-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 0.65rem 1rem;
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      border-radius: var(--r);
+      transition: border-color 0.15s, color 0.15s;
+      -webkit-appearance: none;
+      white-space: nowrap;
+    }
+
+    .test-bell-btn:hover {
+      border-color: var(--gold);
+      color: var(--text);
+    }
+
+    /* Rounds row */
+    .rounds-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      width: 100%;
+      margin-bottom: 2.8rem;
+    }
+
+    .rounds-input {
+      width: 72px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.65rem 0.75rem;
+      font-size: 0.95rem;
+      font-weight: 300;
+      font-family: inherit;
+      border-radius: var(--r);
+      text-align: center;
+      -webkit-appearance: none;
+      transition: border-color 0.15s;
+      color-scheme: dark;
+    }
+
+    .rounds-input:focus {
+      outline: none;
+      border-color: var(--gold);
+    }
+
+    .rounds-input[type="number"]::-webkit-inner-spin-button,
+    .rounds-input[type="number"]::-webkit-outer-spin-button { opacity: 0.3; }
+
+    .rounds-label {
+      font-size: 0.78rem;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+    }
+
+    .rounds-infinite-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 0.65rem 1rem;
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      border-radius: var(--r);
+      transition: border-color 0.15s, color 0.15s;
+      -webkit-appearance: none;
+    }
+
+    .rounds-infinite-btn.active {
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+
+    .rounds-infinite-btn:hover:not(.active) {
+      border-color: #3a3a3a;
+      color: var(--text);
+    }
+
+    /* Start btn */
+    .start-btn {
+      background: var(--gold);
+      color: #0d0d0d;
+      border: none;
+      padding: 0.9rem 3.5rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      cursor: pointer;
+      border-radius: var(--r);
+      transition: opacity 0.15s;
+      -webkit-appearance: none;
+      font-family: inherit;
+    }
+
+    .start-btn:hover { opacity: 0.82; }
+
+    /* ── TIMER ───────────────────────────────── */
+    #screen-timer {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 540px;
+      padding: 2rem;
+    }
+
+    .round-tag {
+      font-size: 0.62rem;
+      letter-spacing: 0.42em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 1.4rem;
+    }
+
+    .clock {
+      font-size: clamp(5.5rem, 20vw, 9.5rem);
+      font-weight: 100;
+      letter-spacing: -0.025em;
+      line-height: 1;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+      transition: color 0.4s;
+      margin-bottom: 0.6rem;
+    }
+
+    .clock.urgent { color: var(--danger); }
+
+    .clock.done-state { color: var(--gold); }
+
+    /* progress bar */
+    .track {
+      width: 100%;
+      height: 1px;
+      background: var(--border);
+      position: relative;
+      margin-bottom: 2.4rem;
+      border-radius: 1px;
+      overflow: hidden;
+    }
+
+    .track-fill {
+      position: absolute;
+      inset: 0 auto 0 0;
+      background: var(--gold);
+      transition: width 0.85s linear;
+    }
+
+    /* bell pulse ring */
+    .bell-ring-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 64px;
+      height: 64px;
+      margin-bottom: 2.4rem;
+    }
+
+    .bell-icon {
+      font-size: 1.8rem;
+      line-height: 1;
+      position: relative;
+      z-index: 1;
+      filter: grayscale(1) brightness(0.5);
+      transition: filter 0.3s;
+    }
+
+    .bell-pulse {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 1px solid var(--gold);
+      opacity: 0;
+    }
+
+    .bell-ring-wrap.ringing .bell-icon {
+      filter: none;
+      animation: bellShake 0.5s ease-in-out;
+    }
+
+    .bell-ring-wrap.ringing .bell-pulse {
+      animation: bellPulseOut 0.7s ease-out forwards;
+    }
+
+    @keyframes bellShake {
+      0%   { transform: rotate(0deg); }
+      20%  { transform: rotate(-18deg); }
+      40%  { transform: rotate(14deg); }
+      60%  { transform: rotate(-10deg); }
+      80%  { transform: rotate(6deg); }
+      100% { transform: rotate(0deg); }
+    }
+
+    @keyframes bellPulseOut {
+      0%   { opacity: 0.9; transform: scale(0.8); }
+      100% { opacity: 0; transform: scale(2.2); }
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    .ctrl-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 0.75rem 1.8rem;
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      cursor: pointer;
+      border-radius: var(--r);
+      transition: border-color 0.15s, color 0.15s;
+      -webkit-appearance: none;
+      font-family: inherit;
+    }
+
+    .ctrl-btn:hover {
+      border-color: var(--muted);
+      color: var(--text);
+    }
+
+    .ctrl-btn.primary {
+      background: var(--gold);
+      color: #0d0d0d;
+      border-color: var(--gold);
+      font-weight: 700;
+    }
+
+    .ctrl-btn.primary:hover { opacity: 0.82; }
+
+    .ctrl-btn.paused-btn {
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+
+    /* done banner */
+    .done-banner {
+      font-size: 0.65rem;
+      letter-spacing: 0.22em;
+      color: var(--gold);
+      text-transform: uppercase;
+      margin-bottom: 2rem;
+      min-height: 1em;
+    }
+
+    /* ── FLASH ───────────────────────────────── */
+    #flash {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0;
+    }
+
+    #flash.go {
+      animation: flashpulse 0.6s ease-out forwards;
+    }
+
+    @keyframes flashpulse {
+      0%   { opacity: 1; background: rgba(201,169,110,0.12); }
+      100% { opacity: 0; background: rgba(201,169,110,0.12); }
+    }
+
+    /* ── NAV BACK ────────────────────────────── */
+    .nav-back {
+      position: fixed;
+      top: 1.4rem;
+      left: 1.6rem;
+      font-size: 0.6rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-decoration: none;
+      opacity: 0.5;
+      transition: opacity 0.15s;
+    }
+
+    .nav-back:hover { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<div id="flash"></div>
+
+<a class="nav-back" href="../">← Timer</a>
+
+<!-- ── SETUP ──────────────────────────────────── -->
+<div id="screen-setup">
+  <p class="wordmark">School of Anatomy</p>
+  <h1 class="page-title">Bellringer</h1>
+
+  <p class="field-label">Interval duration</p>
+  <div class="duration-grid">
+    <button class="dur-btn" data-secs="15"  onclick="pickDuration(this)">15 s</button>
+    <button class="dur-btn selected" data-secs="30" onclick="pickDuration(this)">30 s</button>
+    <button class="dur-btn" data-secs="45"  onclick="pickDuration(this)">45 s</button>
+    <button class="dur-btn" data-secs="60"  onclick="pickDuration(this)">1 min</button>
+    <button class="dur-btn" data-secs="90"  onclick="pickDuration(this)">1:30</button>
+    <button class="dur-btn" data-secs="120" onclick="pickDuration(this)">2 min</button>
+    <button class="dur-btn" data-secs="180" onclick="pickDuration(this)">3 min</button>
+    <button class="dur-btn" data-secs="300" onclick="pickDuration(this)">5 min</button>
+  </div>
+
+  <p class="field-label">Bell sound</p>
+  <div class="bell-row">
+    <select class="bell-select" id="bellSelect">
+      <option value="classic">Classic Bell</option>
+      <option value="school">School Bell</option>
+      <option value="chime">Soft Chime</option>
+      <option value="gong">Deep Gong</option>
+      <option value="ding">Bright Ding</option>
+      <option value="double">Double Ding</option>
+    </select>
+    <button class="test-bell-btn" onclick="testBell()">Test ▶</button>
+  </div>
+
+  <p class="field-label">Rounds</p>
+  <div class="rounds-row">
+    <input type="number" class="rounds-input" id="roundsInput" value="10" min="1" max="999">
+    <span class="rounds-label">rounds</span>
+    <button class="rounds-infinite-btn" id="infiniteBtn" onclick="toggleInfinite()">∞ Continuous</button>
+  </div>
+
+  <button class="start-btn" onclick="beginTimer()">Start</button>
+</div>
+
+<!-- ── TIMER ──────────────────────────────────── -->
+<div id="screen-timer">
+  <p class="round-tag" id="roundTag">Round 1</p>
+  <div class="clock" id="clock">00:30</div>
+  <div class="track"><div class="track-fill" id="trackFill" style="width:0%"></div></div>
+  <div class="bell-ring-wrap" id="bellWrap">
+    <span class="bell-icon">🔔</span>
+    <div class="bell-pulse"></div>
+  </div>
+  <p class="done-banner" id="doneBanner">&nbsp;</p>
+  <div class="controls">
+    <button class="ctrl-btn" onclick="resetTimer()">Reset</button>
+    <button class="ctrl-btn primary" id="pauseBtn" onclick="togglePause()">Pause</button>
+    <button class="ctrl-btn" onclick="skipInterval()">Skip</button>
+  </div>
+</div>
+
+<script>
+/* ── Audio context ──────────────────────────── */
+const AC = new (window.AudioContext || window.webkitAudioContext)();
+
+/* ── Bell synthesis ─────────────────────────── */
+function sine(freq, start, dur, vol, detune = 0) {
+  const osc = AC.createOscillator();
+  const env = AC.createGain();
+  osc.connect(env); env.connect(AC.destination);
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(freq, start);
+  if (detune) osc.detune.setValueAtTime(detune, start);
+  env.gain.setValueAtTime(vol, start);
+  env.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+  osc.start(start); osc.stop(start + dur + 0.05);
+}
+
+function square(freq, start, dur, vol) {
+  const osc = AC.createOscillator();
+  const env = AC.createGain();
+  const filt = AC.createBiquadFilter();
+  filt.type = 'lowpass'; filt.frequency.value = 1800;
+  osc.connect(filt); filt.connect(env); env.connect(AC.destination);
+  osc.type = 'square'; osc.frequency.setValueAtTime(freq, start);
+  env.gain.setValueAtTime(vol, start);
+  env.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+  osc.start(start); osc.stop(start + dur + 0.05);
+}
+
+const BELLS = {
+  classic(t) {
+    // Bell-like: fundamental + inharmonic partials
+    sine(880,  t,       2.5, 0.55);
+    sine(2427, t,       1.8, 0.25); // 2.757x — bell's "hum tone"
+    sine(4756, t + 0.01, 1.2, 0.12);
+    sine(880,  t + 0.01, 2.5, 0.18, -8); // slight detune adds richness
+  },
+  school(t) {
+    // Buzzy school-bell feel
+    square(440, t,       0.06, 0.6);
+    square(440, t + 0.08, 0.06, 0.6);
+    square(440, t + 0.16, 0.06, 0.6);
+    square(880, t + 0.24, 0.06, 0.35);
+    square(440, t + 0.32, 0.9,  0.5);
+  },
+  chime(t) {
+    // Soft metallic chime — high, pure, long tail
+    sine(1047, t,       3.0, 0.45);
+    sine(2093, t,       2.0, 0.18);
+    sine(3136, t + 0.02, 1.2, 0.08);
+  },
+  gong(t) {
+    // Deep gong: low fundamental with slow tremolo via FM
+    const carrier = AC.createOscillator();
+    const mod     = AC.createOscillator();
+    const modGain = AC.createGain();
+    const env     = AC.createGain();
+    mod.connect(modGain); modGain.connect(carrier.frequency);
+    carrier.connect(env); env.connect(AC.destination);
+    carrier.type = 'sine'; carrier.frequency.setValueAtTime(110, t);
+    mod.type = 'sine'; mod.frequency.setValueAtTime(3.5, t);
+    modGain.gain.setValueAtTime(18, t);
+    env.gain.setValueAtTime(0.75, t);
+    env.gain.exponentialRampToValueAtTime(0.0001, t + 4.5);
+    carrier.start(t); mod.start(t);
+    carrier.stop(t + 4.6); mod.stop(t + 4.6);
+    sine(220, t, 2.8, 0.3);
+  },
+  ding(t) {
+    // Bright, clean, quick ding
+    sine(1760, t,       0.8, 0.6);
+    sine(3520, t,       0.4, 0.2);
+    sine(1760, t + 0.01, 0.8, 0.15, 12);
+  },
+  double(t) {
+    // Two ascending tones — "ding ding"
+    sine(880,  t,        1.6, 0.55);
+    sine(1320, t + 0.22, 1.2, 0.45);
+  },
+};
+
+function playBell() {
+  const type = document.getElementById('bellSelect').value;
+  const fn = BELLS[type] || BELLS.classic;
+  fn(AC.currentTime);
+}
+
+function testBell() {
+  AC.resume().then(playBell);
+}
+
+function triggerFlash() {
+  const el = document.getElementById('flash');
+  el.className = '';
+  void el.offsetWidth;
+  el.className = 'go';
+}
+
+function triggerRingAnimation() {
+  const wrap = document.getElementById('bellWrap');
+  wrap.classList.remove('ringing');
+  void wrap.offsetWidth;
+  wrap.classList.add('ringing');
+  setTimeout(() => wrap.classList.remove('ringing'), 800);
+}
+
+/* ── State ──────────────────────────────────── */
+let intervalSecs = 30;
+let totalRounds  = 10;
+let infinite     = false;
+let curRound     = 1;
+let timeLeft     = 30;
+let paused       = false;
+let done         = false;
+let ticker       = null;
+let lastTick     = null;
+
+/* ── Setup ──────────────────────────────────── */
+function pickDuration(btn) {
+  document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  intervalSecs = parseInt(btn.dataset.secs, 10);
+}
+
+function toggleInfinite() {
+  infinite = !infinite;
+  const btn   = document.getElementById('infiniteBtn');
+  const input = document.getElementById('roundsInput');
+  btn.classList.toggle('active', infinite);
+  input.disabled = infinite;
+  input.style.opacity = infinite ? '0.3' : '1';
+}
+
+function beginTimer() {
+  AC.resume();
+  totalRounds = infinite ? Infinity : Math.max(1, parseInt(document.getElementById('roundsInput').value, 10) || 10);
+  curRound  = 1;
+  timeLeft  = intervalSecs;
+  paused    = false;
+  done      = false;
+  lastTick  = performance.now();
+
+  document.getElementById('screen-setup').style.display = 'none';
+  document.getElementById('screen-timer').style.display  = 'flex';
+  document.getElementById('pauseBtn').textContent = 'Pause';
+  document.getElementById('pauseBtn').classList.remove('paused-btn');
+  document.getElementById('doneBanner').innerHTML = '&nbsp;';
+  document.getElementById('clock').classList.remove('done-state');
+
+  updateDisplay();
+  ticker = setInterval(tick, 100);
+}
+
+/* ── Tick ───────────────────────────────────── */
+function tick() {
+  if (paused || done) return;
+
+  const now   = performance.now();
+  const delta = (now - lastTick) / 1000;
+  lastTick    = now;
+  timeLeft   -= delta;
+
+  if (timeLeft <= 0) {
+    // Ring!
+    AC.resume().then(() => {
+      playBell();
+      triggerFlash();
+      triggerRingAnimation();
+    });
+
+    if (!infinite && curRound >= totalRounds) {
+      done     = true;
+      timeLeft = 0;
+      document.getElementById('clock').classList.add('done-state');
+      document.getElementById('doneBanner').textContent = 'All rounds complete';
+      document.getElementById('pauseBtn').disabled = true;
+      clearInterval(ticker);
+      updateDisplay();
+      return;
+    }
+
+    curRound++;
+    timeLeft = intervalSecs + timeLeft; // carry over overshoot
+  }
+
+  updateDisplay();
+}
+
+function updateDisplay() {
+  const secs = Math.max(0, timeLeft);
+  document.getElementById('clock').textContent = fmt(secs);
+  document.getElementById('clock').classList.toggle('urgent', secs < 6 && !done);
+  document.getElementById('trackFill').style.width =
+    ((1 - secs / intervalSecs) * 100).toFixed(2) + '%';
+
+  if (infinite) {
+    document.getElementById('roundTag').textContent = `Round ${curRound}`;
+  } else {
+    document.getElementById('roundTag').textContent = `Round ${curRound} of ${totalRounds}`;
+  }
+}
+
+/* ── Controls ───────────────────────────────── */
+function togglePause() {
+  if (done) return;
+  paused = !paused;
+  const btn = document.getElementById('pauseBtn');
+  if (paused) {
+    lastTick = null;
+    btn.textContent = 'Resume';
+    btn.classList.add('paused-btn');
+    btn.classList.remove('primary');
+  } else {
+    lastTick = performance.now();
+    btn.textContent = 'Pause';
+    btn.classList.remove('paused-btn');
+    btn.classList.add('primary');
+  }
+}
+
+function skipInterval() {
+  if (done) return;
+  timeLeft = 0;
+}
+
+function resetTimer() {
+  clearInterval(ticker);
+  paused   = false;
+  done     = false;
+  timeLeft = intervalSecs;
+  document.getElementById('screen-timer').style.display = 'none';
+  document.getElementById('screen-setup').style.display = 'flex';
+  document.getElementById('pauseBtn').disabled = false;
+  document.getElementById('pauseBtn').textContent = 'Pause';
+  document.getElementById('pauseBtn').classList.remove('paused-btn');
+  document.getElementById('pauseBtn').classList.add('primary');
+}
+
+/* ── Formatter ──────────────────────────────── */
+function fmt(secs) {
+  const s = Math.max(0, Math.ceil(secs));
+  return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+}
+</script>
+</body>
+</html>
