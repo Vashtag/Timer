@@ -433,6 +433,21 @@
       margin-bottom: 0.45rem;
     }
 
+    .modal-time-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.7rem;
+      margin-bottom: 1.1rem;
+    }
+
+    .modal-time-col .modal-label {
+      margin-bottom: 0.35rem;
+    }
+
+    .modal-time-col .modal-input {
+      width: 100%;
+    }
+
     .modal-field {
       display: flex;
       align-items: center;
@@ -595,14 +610,20 @@
 <div id="custom-modal">
   <p class="modal-title">Custom Session</p>
 
-  <p class="modal-label">Start time</p>
-  <div class="modal-field">
-    <input type="time" id="customTime" class="modal-input" value="11:30">
+  <div class="modal-time-row">
+    <div class="modal-time-col">
+      <p class="modal-label">Start time</p>
+      <input type="time" id="customTime" class="modal-input" value="11:30" oninput="syncEndFromStartDur()">
+    </div>
+    <div class="modal-time-col">
+      <p class="modal-label">End time</p>
+      <input type="time" id="customEndTime" class="modal-input" value="13:00" oninput="syncDurFromStartEnd()">
+    </div>
   </div>
 
   <p class="modal-label">Duration</p>
   <div class="modal-field">
-    <input type="number" id="customDuration" class="modal-input narrow" value="90" min="10" max="480" step="5">
+    <input type="number" id="customDuration" class="modal-input narrow" value="90" min="10" max="480" step="5" oninput="syncEndFromStartDur()">
     <span class="modal-unit">min</span>
   </div>
 
@@ -938,6 +959,29 @@ let prevSelectedBtn  = null;
 let customConfirmed  = false;
 let modalStations    = 5;
 
+function syncEndFromStartDur() {
+  const startVal = document.getElementById('customTime').value;
+  const dur      = parseInt(document.getElementById('customDuration').value, 10);
+  if (!startVal || isNaN(dur) || dur <= 0) return;
+  const [h, m]   = startVal.split(':').map(Number);
+  const endMins  = h * 60 + m + dur;
+  const eh = Math.floor(endMins / 60) % 24;
+  const em = endMins % 60;
+  document.getElementById('customEndTime').value =
+    String(eh).padStart(2, '0') + ':' + String(em).padStart(2, '0');
+}
+
+function syncDurFromStartEnd() {
+  const startVal = document.getElementById('customTime').value;
+  const endVal   = document.getElementById('customEndTime').value;
+  if (!startVal || !endVal) return;
+  const [sh, sm] = startVal.split(':').map(Number);
+  const [eh, em] = endVal.split(':').map(Number);
+  let dur = (eh * 60 + em) - (sh * 60 + sm);
+  if (dur <= 0) dur += 24 * 60;
+  document.getElementById('customDuration').value = dur;
+}
+
 function openCustom(btn) {
   prevSelectedBtn = document.querySelector('.opt-btn.selected');
   customConfirmed = false;
@@ -951,6 +995,7 @@ function openCustom(btn) {
   document.querySelectorAll('#modalStationPills .modal-pill').forEach((b, i) => {
     b.classList.toggle('active', [2,3,4,5,6][i] === modalStations);
   });
+  syncEndFromStartDur();
 
   document.getElementById('custom-backdrop').classList.add('open');
   document.getElementById('custom-modal').classList.add('open');
